@@ -9,6 +9,7 @@
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet } from 'react-native';
 import RootNavigator from './navigation/RootNavigator';
 
 /**
@@ -35,28 +36,22 @@ class ErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
-      // Return a minimal fallback UI to prevent total crash
+      // Return a minimal fallback UI to prevent total crash (React Native compatible)
       return (
         <GestureHandlerRootView style={{ flex: 1 }}>
           <SafeAreaProvider>
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#f5f5f5',
-              flexDirection: 'column',
-              padding: 20,
-            }}>
-              <h1>⚠️ Application Error</h1>
-              <p>The application encountered an unexpected error.</p>
-              <p style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
-                {this.state.error?.message}
-              </p>
-              <p style={{ marginTop: 20, fontSize: 12 }}>
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorTitle}>⚠️ Application Error</Text>
+              <Text style={styles.errorMessage}>
+                The application encountered an unexpected error.
+              </Text>
+              <Text style={styles.errorDetail}>
+                {this.state.error?.message || 'Unknown error'}
+              </Text>
+              <Text style={styles.errorRestart}>
                 Please restart the application.
-              </p>
-            </div>
+              </Text>
+            </View>
           </SafeAreaProvider>
         </GestureHandlerRootView>
       );
@@ -79,7 +74,6 @@ class ErrorBoundary extends React.Component<
  * - GestureHandlerRootView: Enables gesture handling for navigation
  * - SafeAreaProvider: Handles safe area insets for notched devices
  * - RootNavigator: Main navigation container
- * - StatusBar: System status bar configuration
  */
 export default function App() {
   return (
@@ -92,3 +86,39 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
+// Styles for error boundary UI
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#d32f2f',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginVertical: 10,
+    textAlign: 'center',
+  },
+  errorRestart: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+});
