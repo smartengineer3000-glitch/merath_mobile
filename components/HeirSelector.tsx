@@ -6,7 +6,7 @@
  * إضافة وإدارة الوارثون بشكل ديناميكي
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import {
 } from 'react-native';
 import { useHeirs } from '../lib/inheritance/hooks';
 import type { HeirsData, HeirType } from '../lib/inheritance/types';
+import { HeirValidator } from '../lib/validation/InputValidator';
+import type { ValidationResult } from '../lib/validation/InputValidator';
 
 export interface HeirSelectorProps {
   onHeirsChange?: (heirs: HeirsData) => void;
@@ -45,26 +47,30 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
   const [showModal, setShowModal] = useState(false);
   const [selectedHeirType, setSelectedHeirType] = useState<HeirType>('son');
   const [selectedCount, setSelectedCount] = useState(1);
-  const [error, setError] = useState<string | null>(null);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Convert array heirs to HeirsData object
   const heirsArray = (heirs as any) || [];
-  const safeHeirs: HeirsData = {};
-  if (Array.isArray(heirsArray)) {
-    heirsArray.forEach((heir: any) => {
-      safeHeirs[heir.key] = heir.count;
-    });
-  }
+  const safeHeirs: HeirsData = useMemo(() => {
+    const result: HeirsData = {};
+    if (Array.isArray(heirsArray)) {
+      heirsArray.forEach((heir: any) => {
+        result[heir.key] = heir.count;
+      });
+    }
+    return result;
+  }, [heirsArray]);
 
   const handleAddHeir = useCallback(() => {
     try {
       if (!selectedHeirType) {
-        setError('يجب اختيار نوع الوارث');
+        setModalError('يجب اختيار نوع الوارث');
         return;
       }
 
-      if (selectedCount < 1 || selectedCount > 10) {
-        setError('العدد يجب أن يكون بين 1 و 10');
+      if (selectedCount < 1 || selectedCount > 100) {
+        setModalError('العدد يجب أن يكون بين 1 و 100');
         return;
       }
 
@@ -72,11 +78,21 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
       const newHeirs: HeirsData = { ...safeHeirs };
       newHeirs[selectedHeirType] = selectedCount;
       
-      onHeirsChange?.(newHeirs);
-      setError(null);
-      setShowModal(false);
+      // Validate updated heirs list
+      const validation = HeirValidator.validate(newHeirs);
+      setValidationResult(validation);
+      
+      if (validation.isValid) {
+        onHeirsChange?.(newHeirs);
+        setModalError(null);
+        setShowModal(false);
+      } else {
+        // Show first error in modal
+        const firstError = validation.errors[0];
+        setModalError(firstError.userMessage);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطأ في إضافة الوارث');
+      setModalError(err instanceof Error ? err.message : 'خطأ في إضافة الوارث');
     }
   }, [selectedHeirType, selectedCount, safeHeirs, onHeirsChange]);
 
@@ -91,6 +107,11 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
           onPress: () => {
             const newHeirs: HeirsData = { ...safeHeirs };
             delete newHeirs[heirType];
+            
+            // Validate updated heirs list
+            const validation = HeirValidator.validate(newHeirs);
+            setValidationResult(validation);
+            
             onHeirsChange?.(newHeirs);
           }
         }
@@ -107,7 +128,13 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
         {
           text: 'مسح',
           onPress: () => {
-            onHeirsChange?.({});
+            const emptyHeirs: HeirsData = {};
+            
+            // Validate empty heirs (will show error)
+            const validation = HeirValidator.validate(emptyHeirs);
+            setValidationResult(validation);
+            
+            onHeirsChange?.(emptyHeirs);
           }
         }
       ]
@@ -120,11 +147,45 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
   return (
     <View style={styles.container}>
       {/* الزر الرئيسي لإضافة الوارثون */}
+      {/* Validation Errors/Warnings */}
+      {validationResult && validationResult.errors.length > 0 && (
+        <View style={[styles.feedbackContainer, styles.feedbackErrorContainer]}>
+          {validationResult.errors.map((error, index) => (
+            <View key={`error-${index}`} style={styles.feedbackItem}>
+              <Text style={styles.feedbackIcon}>❌</Text>
+              <View style={styles.feedbackText}>
+                <Text style={styles.feedbackUserMessage}>{error.userMessage}</Text>
+                {error.suggestion && (
+                  <Text style={styles.feedbackSuggestion}>{error.suggestion}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {validationResult && validationResult.warnings.length > 0 && (
+        <View style={[styles.feedbackContainer, styles.feedbackWarningContainer]}>
+          {validationResult.warnings.map((warning, index) => (
+            <View key={`warning-${index}`} style={styles.feedbackItem}>
+              <Text style={styles.feedbackIcon}>⚠️</Text>
+              <View style={styles.feedbackText}>
+                <Text style={styles.feedbackUserMessage}>{warning.userMessage}</Text>
+                {warning.suggestion && (
+                  <Text style={styles.feedbackSuggestion}>{warning.suggestion}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* الزر الرئيسي لإضافة الوارثون */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
           setShowModal(true);
-          setError(null);
+          setModalError(null);
         }}
       >
         <Text style={styles.addButtonText}>+ إضافة وارث</Text>
@@ -236,10 +297,10 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
               ))}
             </View>
 
-            {/* رسالة الخطأ */}
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
+            {/* Modal Error Message */}
+            {modalError && (
+              <View style={styles.modalErrorContainer}>
+                <Text style={styles.modalErrorText}>{modalError}</Text>
               </View>
             )}
 
@@ -249,7 +310,7 @@ export function HeirSelector({ onHeirsChange }: HeirSelectorProps) {
                 style={styles.cancelButton}
                 onPress={() => {
                   setShowModal(false);
-                  setError(null);
+                  setModalError(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>إلغاء</Text>
@@ -488,6 +549,62 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontSize: 12,
     textAlign: 'center'
+  },
+  modalErrorContainer: {
+    backgroundColor: '#ffebee',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f'
+  },
+  modalErrorText: {
+    color: '#d32f2f',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'right'
+  },
+  feedbackContainer: {
+    borderRadius: 6,
+    padding: 12,
+    marginVertical: 8,
+    marginHorizontal: 0
+  },
+  feedbackErrorContainer: {
+    backgroundColor: '#ffebee',
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f'
+  },
+  feedbackWarningContainer: {
+    backgroundColor: '#fff3e0',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f57c00'
+  },
+  feedbackItem: {
+    flexDirection: 'row',
+    marginBottom: 8
+  },
+  feedbackIcon: {
+    fontSize: 16,
+    marginRight: 8,
+    marginTop: 2
+  },
+  feedbackText: {
+    flex: 1
+  },
+  feedbackUserMessage: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#333',
+    textAlign: 'right',
+    marginBottom: 4
+  },
+  feedbackSuggestion: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+    fontStyle: 'italic',
+    marginTop: 2
   },
   modalActions: {
     flexDirection: 'row',

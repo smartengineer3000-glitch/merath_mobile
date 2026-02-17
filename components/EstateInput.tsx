@@ -6,10 +6,12 @@
  * استقبال بيانات التركة الشرعية من المستخدم
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useCalculator } from '../lib/inheritance/hooks';
 import { EstateData } from '../lib/inheritance/types';
+import { EstateValidator } from '../lib/validation/InputValidator';
+import type { ValidationResult } from '../lib/validation/InputValidator';
 
 export interface EstateInputProps {
   onEstateChange?: (estate: EstateData) => void;
@@ -27,7 +29,28 @@ export function EstateInput({ onEstateChange, initialEstate }: EstateInputProps)
   const [funeral, setFuneral] = useState((initialEstate?.funeral ?? initialEstate?.funeralCosts ?? estateData.funeral ?? estateData.funeralCosts ?? 0).toString());
   const [debts, setDebts] = useState((initialEstate?.debts ?? estateData.debts ?? 0).toString());
   const [will, setWill] = useState((initialEstate?.will ?? initialEstate?.willAmount ?? estateData.will ?? estateData.willAmount ?? 0).toString());
-  const [error, setError] = useState<string | null>(null);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+
+  // Memoize current estate data
+  const currentEstate = useMemo(() => ({
+    total: parseFloat(total) || 0,
+    funeral: parseFloat(funeral) || 0,
+    debts: parseFloat(debts) || 0,
+    will: parseFloat(will) || 0
+  }), [total, funeral, debts, will]);
+
+  // Validate on any change
+  const validateAndUpdate = useCallback((estate: EstateData) => {
+    // Run validation
+    const result = EstateValidator.validate(estate);
+    setValidationResult(result);
+
+    // Update only if valid
+    if (result.isValid) {
+      updateEstateData(estate);
+      onEstateChange?.(estate);
+    }
+  }, [updateEstateData, onEstateChange]);
 
   const handleTotalChange = useCallback((text: string) => {
     setTotal(text);
@@ -37,7 +60,7 @@ export function EstateInput({ onEstateChange, initialEstate }: EstateInputProps)
       debts: parseFloat(debts) || 0,
       will: parseFloat(will) || 0
     });
-  }, [funeral, debts, will]);
+  }, [funeral, debts, will, validateAndUpdate]);
 
   const handleFuneralChange = useCallback((text: string) => {
     setFuneral(text);
@@ -47,7 +70,7 @@ export function EstateInput({ onEstateChange, initialEstate }: EstateInputProps)
       debts: parseFloat(debts) || 0,
       will: parseFloat(will) || 0
     });
-  }, [total, debts, will]);
+  }, [total, debts, will, validateAndUpdate]);
 
   const handleDebtsChange = useCallback((text: string) => {
     setDebts(text);
@@ -57,7 +80,7 @@ export function EstateInput({ onEstateChange, initialEstate }: EstateInputProps)
       debts: parseFloat(text) || 0,
       will: parseFloat(will) || 0
     });
-  }, [total, funeral, will]);
+  }, [total, funeral, will, validateAndUpdate]);
 
   const handleWillChange = useCallback((text: string) => {
     setWill(text);
@@ -67,28 +90,7 @@ export function EstateInput({ onEstateChange, initialEstate }: EstateInputProps)
       debts: parseFloat(debts) || 0,
       will: parseFloat(text) || 0
     });
-  }, [total, funeral, debts]);
-
-  const validateAndUpdate = (estate: EstateData) => {
-    // التحقق من الصحة
-    const funeralVal = estate.funeral ?? estate.funeralCosts ?? 0;
-    const debtsVal = estate.debts ?? 0;
-    const willVal = estate.will ?? estate.willAmount ?? 0;
-    
-    if (estate.total < 0 || funeralVal < 0 || debtsVal < 0 || willVal < 0) {
-      setError('جميع القيم يجب أن تكون موجبة');
-      return;
-    }
-
-    if (estate.total === 0) {
-      setError('التركة يجب أن تكون أكبر من صفر');
-      return;
-    }
-
-    setError(null);
-    updateEstateData(estate);
-    onEstateChange?.(estate);
-  };
+  }, [total, funeral, debts, validateAndUpdate]);
 
   return (
     <View style={styles.container}>
@@ -148,8 +150,39 @@ export function EstateInput({ onEstateChange, initialEstate }: EstateInputProps)
         />
       </View>
 
-      {/* رسالة الخطأ */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {/* Validation Errors */}
+      {validationResult && validationResult.errors.length > 0 && (
+        <View style={[styles.feedbackContainer, styles.feedbackErrorContainer]}>
+          {validationResult.errors.map((error, index) => (
+            <View key={`error-${index}`} style={styles.feedbackItem}>
+              <Text style={styles.feedbackIcon}>❌</Text>
+              <View style={styles.feedbackText}>
+                <Text style={styles.feedbackUserMessage}>{error.userMessage}</Text>
+                {error.suggestion && (
+                  <Text style={styles.feedbackSuggestion}>{error.suggestion}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Validation Warnings */}
+      {validationResult && validationResult.warnings.length > 0 && (
+        <View style={[styles.feedbackContainer, styles.feedbackWarningContainer]}>
+          {validationResult.warnings.map((warning, index) => (
+            <View key={`warning-${index}`} style={styles.feedbackItem}>
+              <Text style={styles.feedbackIcon}>⚠️</Text>
+              <View style={styles.feedbackText}>
+                <Text style={styles.feedbackUserMessage}>{warning.userMessage}</Text>
+                {warning.suggestion && (
+                  <Text style={styles.feedbackSuggestion}>{warning.suggestion}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* ملخص التركة */}
       <View style={styles.summary}>
@@ -214,6 +247,48 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     marginBottom: 12,
     textAlign: 'right'
+  },
+  feedbackContainer: {
+    borderRadius: 6,
+    padding: 12,
+    marginVertical: 8,
+    marginHorizontal: 0
+  },
+  feedbackErrorContainer: {
+    backgroundColor: '#ffebee',
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f'
+  },
+  feedbackWarningContainer: {
+    backgroundColor: '#fff3e0',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f57c00'
+  },
+  feedbackItem: {
+    flexDirection: 'row',
+    marginBottom: 8
+  },
+  feedbackIcon: {
+    fontSize: 16,
+    marginRight: 8,
+    marginTop: 2
+  },
+  feedbackText: {
+    flex: 1
+  },
+  feedbackUserMessage: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#333',
+    textAlign: 'right',
+    marginBottom: 4
+  },
+  feedbackSuggestion: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+    fontStyle: 'italic',
+    marginTop: 2
   },
   summary: {
     backgroundColor: '#e3f2fd',
