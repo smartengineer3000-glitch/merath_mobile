@@ -42,7 +42,7 @@ const config: ExpoConfig = {
   // <<< Phase 6: Enhanced EAS Configuration >>>
   extra: {
     eas: {
-      projectId: "2c2de43d-16e9-4c3f-88b6-be678d534494"
+      projectId: "9fce94bd-7eee-4453-9707-f4bcc74246f6"
     },
     // App metadata for deep linking and sharing
     appMetadata: {
