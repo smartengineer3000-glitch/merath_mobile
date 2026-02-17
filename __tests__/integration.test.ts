@@ -207,15 +207,13 @@ describe('Phase 6: Integration Tests', () => {
 
     it('should have adaptive icon configuration', () => {
       const adapterIcon = {
-        backgroundColor: '#E6F4FE',
-        foregroundImage: './assets/images/android-icon-foreground.png',
-        backgroundImage: './assets/images/android-icon-background.png',
-        monochromeImage: './assets/images/android-icon-monochrome.png',
+        foregroundImage: './assets/adaptive-icon.png',
+        backgroundColor: '#FFFFFF',
       };
       
       expect(adapterIcon).toBeDefined();
-      expect(adapterIcon.backgroundColor).toBe('#E6F4FE');
-      expect(adapterIcon.foregroundImage).toContain('android-icon');
+      expect(adapterIcon.backgroundColor).toBe('#FFFFFF');
+      expect(adapterIcon.foregroundImage).toContain('adaptive-icon');
     });
   });
 

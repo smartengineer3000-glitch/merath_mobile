@@ -23,6 +23,13 @@ import HistoryScreen from '../screens/HistoryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AboutScreen from '../screens/AboutScreen';
 
+// Initialize RTL once at module load time
+let rtlInitialized = false;
+if (!rtlInitialized && Platform.OS !== 'web') {
+  I18nManager.forceRTL(true);
+  rtlInitialized = true;
+}
+
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -119,9 +126,6 @@ export function TabNavigator() {
  * Main navigation container with stack for handling modals/errors
  */
 export function RootNavigator() {
-  // Enable RTL layout for Arabic
-  I18nManager.forceRTL(true);
-
   return (
     <NavigationContainer linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>

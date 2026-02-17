@@ -13,7 +13,7 @@ const env = {
   appName: 'حاسبة المواريث الشرعية (تطبيق جوال)',
   appSlug: 'merath_mobile',
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-  // Leave empty to use the default icon from assets/images/icon.png
+  // Leave empty to use the default icon from assets/icon.png
   logoUrl: '',
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
@@ -25,13 +25,19 @@ const config: ExpoConfig = {
   slug: env.appSlug,
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   
   description: 'تطبيق شامل لحساب المواريث الشرعية بدعم المذاهب الفقهية الأربعة',
   platforms: ["ios", "android"],
+
+  splash: {
+    image: "./assets/splash.png",
+    resizeMode: "contain",
+    backgroundColor: "#ffffff"
+  },
 
   // <<< Phase 6: Enhanced EAS Configuration >>>
   extra: {
@@ -56,7 +62,11 @@ const config: ExpoConfig = {
     },
   },
   android: {
-    icon: "./assets/images/icon.png",
+    icon: "./assets/icon.png",
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#FFFFFF"
+    },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
@@ -86,6 +96,7 @@ const config: ExpoConfig = {
   },
   web: {
     output: "static",
+    favicon: "./assets/favicon.png",
   },
   plugins: [
     "expo-router",
