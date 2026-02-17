@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { InheritanceCalculationEngine } from './calculation-engine';
 import { AuditLog, createAuditLog, type AuditLogEntry } from './audit-log';
+import { CalculationCache, PerformanceMonitor } from '../performance/optimization';
 import type {
   EstateData,
   CalculationResult,
@@ -69,12 +70,30 @@ export function useCalculator() {
           throw new Error('يجب تحديد ورثة واحد على الأقل');
         }
 
-        const engine = new InheritanceCalculationEngine(madhab, estateData, heirs);
-        const calculationResult = engine.calculate();
+        // Check cache first
+        const cachedResult = CalculationCache.getCalculation(madhab, estateData, heirs);
+        if (cachedResult) {
+          CalculationCache.recordHit(cachedResult.calculationTime || 0);
+          setResult(cachedResult);
+          return cachedResult;
+        }
+
+        // Perform calculation with performance monitoring
+        const { result: calculationResult, duration } = PerformanceMonitor.measureSync(
+          `Calculate [${madhab}]`,
+          () => {
+            const engine = new InheritanceCalculationEngine(madhab, estateData, heirs);
+            return engine.calculate();
+          }
+        );
 
         if (!calculationResult) {
           throw new Error('فشل الحساب: لم يتم الحصول على نتيجة');
         }
+
+        // Cache the result for future use
+        CalculationCache.cacheCalculation(madhab, estateData, heirs, calculationResult, duration);
+        CalculationCache.recordMiss(duration);
 
         setResult(calculationResult);
         return calculationResult;
