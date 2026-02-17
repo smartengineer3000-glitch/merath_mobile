@@ -6,17 +6,20 @@
  * عرض شامل لنتائج الحساب والتوزيع
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useResults } from '../lib/inheritance/hooks';
 import type { CalculationResult } from '../lib/inheritance/types';
+import { PDFExporter } from '../lib/export/PDFExporter';
+import { ErrorLogger, CalculationError } from '../lib/errors/ErrorHandler';
 
 export interface ResultsDisplayProps {
   result?: CalculationResult | null;
@@ -32,6 +35,8 @@ export function ResultsDisplay({ result, onClose }: ResultsDisplayProps) {
   const results = hooksResults?.previousResults || [];
   const [showComparison, setShowComparison] = useState(false);
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const currentResult = result || results[0];
   const previousResults = results.slice(1, 4);
@@ -43,6 +48,67 @@ export function ResultsDisplay({ result, onClose }: ResultsDisplayProps) {
       madhabs: {}
     };
   }, [results]);
+
+  // Handle PDF Export with error handling
+  const handleExportPDF = useCallback(async () => {
+    if (!currentResult || !currentResult.success) {
+      setExportError('لا توجد نتائج صحيحة للتصدير');
+      return;
+    }
+
+    setExportLoading(true);
+    setExportError(null);
+
+    try {
+      const timestamp = new Date().toLocaleDateString('ar-SA');
+      const filename = `تقرير-التركة-${timestamp}`;
+
+      // Generate and share PDF
+      await PDFExporter.generateAndShare(currentResult, {
+        filename,
+        includeCalculationSteps: true,
+        theme: 'light'
+      });
+
+      // Log success
+      ErrorLogger.logError(
+        'PDF_EXPORT_SUCCESS',
+        `PDF exported successfully for madhab: ${currentResult.madhhabName}`,
+        'تم تصدير التقرير بنجاح',
+        'info',
+        { madhab: currentResult.madhhabName }
+      );
+      
+      Alert.alert(
+        'تم بنجاح',
+        'تم إنشاء التقرير وفتح خيارات المشاركة'
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'فشل في تصدير PDF';
+      setExportError(errorMessage);
+
+      // Log error
+      ErrorLogger.logError(
+        'PDF_EXPORT_ERROR',
+        errorMessage,
+        'حدث خطأ أثناء تصدير التقرير',
+        'error',
+        {
+          context: 'PDF Export',
+          madhab: currentResult?.madhhabName
+        },
+        err instanceof Error ? err.stack : undefined
+      );
+
+      Alert.alert(
+        'خطأ في التصدير',
+        errorMessage,
+        [{ text: 'حسناً', onPress: () => setExportError(null) }]
+      );
+    } finally {
+      setExportLoading(false);
+    }
+  }, [currentResult]);
 
   if (!currentResult || !currentResult.success) {
     return (
@@ -231,6 +297,41 @@ export function ResultsDisplay({ result, onClose }: ResultsDisplayProps) {
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Text style={styles.closeButtonText}>إغلاق</Text>
         </TouchableOpacity>
+      )}
+
+      {/* PDF Export Button and Error Display */}
+      <View style={styles.actionButtonsContainer}>
+        <TouchableOpacity
+          style={[styles.exportButton, exportLoading && styles.exportButtonDisabled]}
+          onPress={handleExportPDF}
+          disabled={exportLoading || !currentResult?.success}
+        >
+          {exportLoading ? (
+            <>
+              <ActivityIndicator size="small" color="#fff" style={styles.exportButtonSpinner} />
+              <Text style={styles.exportButtonText}>جاري التصدير...</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.exportButtonIcon}>📄</Text>
+              <Text style={styles.exportButtonText}>تصدير إلى PDF</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Export Error Display */}
+      {exportError && (
+        <View style={styles.exportErrorContainer}>
+          <Text style={styles.exportErrorIcon}>❌</Text>
+          <View style={styles.exportErrorContent}>
+            <Text style={styles.exportErrorTitle}>خطأ في التصدير</Text>
+            <Text style={styles.exportErrorMessage}>{exportError}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setExportError(null)}>
+            <Text style={styles.exportErrorClose}>✕</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <View style={{ height: 20 }} />
@@ -518,6 +619,72 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#fff'
+  },
+  actionButtonsContainer: {
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 12,
+    gap: 8
+  },
+  exportButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#1976d2',
+    borderRadius: 6,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center'
+  },
+  exportButtonDisabled: {
+    backgroundColor: '#90caf9',
+    opacity: 0.7
+  },
+  exportButtonIcon: {
+    fontSize: 16,
+    marginRight: 8
+  },
+  exportButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff'
+  },
+  exportButtonSpinner: {
+    marginRight: 8
+  },
+  exportErrorContainer: {
+    marginHorizontal: 12,
+    marginBottom: 12,
+    backgroundColor: '#ffebee',
+    borderRadius: 6,
+    padding: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  exportErrorIcon: {
+    fontSize: 18,
+    marginRight: 8
+  },
+  exportErrorContent: {
+    flex: 1
+  },
+  exportErrorTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#d32f2f',
+    marginBottom: 2
+  },
+  exportErrorMessage: {
+    fontSize: 11,
+    color: '#c62828',
+    textAlign: 'right'
+  },
+  exportErrorClose: {
+    fontSize: 18,
+    color: '#d32f2f',
+    marginLeft: 8,
+    fontWeight: '700'
   }
 });
 
