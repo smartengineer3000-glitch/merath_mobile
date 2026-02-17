@@ -6,11 +6,13 @@
  * sets up gesture handlers, and configures the status bar
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import RootNavigator from './navigation/RootNavigator';
+import DisclaimersModal from './components/DisclaimersModal';
 
 /**
  * Error Boundary Component
@@ -73,14 +75,77 @@ class ErrorBoundary extends React.Component<
  * Wraps the application with necessary providers and configuration:
  * - GestureHandlerRootView: Enables gesture handling for navigation
  * - SafeAreaProvider: Handles safe area insets for notched devices
+ * - DisclaimersModal: Shows legal disclaimers on first launch
  * - RootNavigator: Main navigation container
  */
 export default function App() {
+  const [disclaimersAccepted, setDisclaimersAccepted] = useState(false);
+  const [disclaimersLoaded, setDisclaimersLoaded] = useState(false);
+
+  useEffect(() => {
+    // Check if user has already accepted disclaimers
+    checkDisclaimerAcceptance();
+  }, []);
+
+  const checkDisclaimerAcceptance = async () => {
+    try {
+      const accepted = await AsyncStorage.getItem('disclaimers_accepted');
+      if (accepted === 'true') {
+        setDisclaimersAccepted(true);
+      }
+    } catch (error) {
+      console.error('Error checking disclaimer acceptance:', error);
+    } finally {
+      setDisclaimersLoaded(true);
+    }
+  };
+
+  const handleDisclaimersAccept = async () => {
+    try {
+      // Store acceptance in AsyncStorage
+      await AsyncStorage.setItem('disclaimers_accepted', 'true');
+      await AsyncStorage.setItem('disclaimers_accepted_date', new Date().toISOString());
+      
+      setDisclaimersAccepted(true);
+    } catch (error) {
+      console.error('Error saving disclaimer acceptance:', error);
+    }
+  };
+
+  const handleDisclaimersDecline = () => {
+    // User declined - exit app
+    // In a real app, you might show a message or take different action
+    console.log('User declined disclaimers');
+  };
+
+  if (!disclaimersLoaded) {
+    // Show loading state while checking disclaimer acceptance
+    return (
+      <ErrorBoundary>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text>جاري التحميل...</Text>
+            </View>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <RootNavigator />
+          {/* Disclaimers Modal - Shows if not yet accepted */}
+          <DisclaimersModal
+            visible={!disclaimersAccepted}
+            onAccept={handleDisclaimersAccept}
+            onDecline={handleDisclaimersDecline}
+          />
+          
+          {/* Main Navigation - Only shown after disclaimers accepted */}
+          {disclaimersAccepted && <RootNavigator />}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
