@@ -9,7 +9,7 @@
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RootNavigator from './navigation/RootNavigator';
 import DisclaimersModal from './components/DisclaimersModal';
@@ -115,7 +115,8 @@ export default function App() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>جاري التحميل...</Text>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={{ marginTop: 12, fontSize: 14, color: '#666' }}>جاري التحميل...</Text>
           </View>
         </SafeAreaProvider>
       </GestureHandlerRootView>
