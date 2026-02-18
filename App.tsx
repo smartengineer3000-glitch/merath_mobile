@@ -40,32 +40,23 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       // Return a minimal fallback UI to prevent total crash (React Native compatible)
       return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorTitle}>⚠️ Application Error</Text>
-              <Text style={styles.errorMessage}>
-                The application encountered an unexpected error.
-              </Text>
-              <Text style={styles.errorDetail}>
-                {this.state.error?.message || 'Unknown error'}
-              </Text>
-              <Text style={styles.errorRestart}>
-                Please restart the application.
-              </Text>
-            </View>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>⚠️ Application Error</Text>
+          <Text style={styles.errorMessage}>
+            The application encountered an unexpected error.
+          </Text>
+          <Text style={styles.errorDetail}>
+            {this.state.error?.message || 'Unknown error'}
+          </Text>
+          <Text style={styles.errorRestart}>
+            Please restart the application.
+          </Text>
+        </View>
       );
     }
 
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <RootNavigator />
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    );
+    // Render children instead of hardcoding RootNavigator
+    return this.props.children;
   }
 }
 
@@ -121,22 +112,20 @@ export default function App() {
   if (!disclaimersLoaded) {
     // Show loading state while checking disclaimer acceptance
     return (
-      <ErrorBoundary>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text>جاري التحميل...</Text>
-            </View>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      </ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text>جاري التحميل...</Text>
+          </View>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ErrorBoundary>
           {/* Disclaimers Modal - Shows if not yet accepted */}
           <DisclaimersModal
             visible={!disclaimersAccepted}
@@ -146,9 +135,9 @@ export default function App() {
           
           {/* Main Navigation - Only shown after disclaimers accepted */}
           {disclaimersAccepted && <RootNavigator />}
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
