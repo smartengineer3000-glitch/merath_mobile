@@ -11,8 +11,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SplashScreen from 'expo-splash-screen';
 import RootNavigator from './navigation/RootNavigator';
 import DisclaimersModal from './components/DisclaimersModal';
+
+// Keep the splash screen visible while app initializes
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Handle error if preventAutoHideAsync fails
+  console.warn('Failed to prevent auto-hiding splash screen');
+});
 
 /**
  * Error Boundary Component
@@ -72,11 +79,22 @@ class ErrorBoundary extends React.Component<
 export default function App() {
   const [disclaimersAccepted, setDisclaimersAccepted] = useState(false);
   const [disclaimersLoaded, setDisclaimersLoaded] = useState(false);
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
     // Check if user has already accepted disclaimers
     checkDisclaimerAcceptance();
   }, []);
+
+  // Hide splash screen once app is ready
+  useEffect(() => {
+    if (disclaimersLoaded) {
+      SplashScreen.hideAsync().catch((err) => {
+        console.warn('Failed to hide splash screen:', err);
+      });
+      setAppReady(true);
+    }
+  }, [disclaimersLoaded]);
 
   const checkDisclaimerAcceptance = async () => {
     try {
