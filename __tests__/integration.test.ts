@@ -167,10 +167,10 @@ describe('Phase 6: Integration Tests', () => {
     });
 
     it('should have valid bundle ID', () => {
-      const bundleId = 'space.manus.merath_mobile.t20260101172935';
+      const bundleId = 'com.merath.mobile';
       expect(bundleId).toBeDefined();
-      expect(bundleId).toContain('space.manus');
-      expect(bundleId).toContain('merath_mobile');
+      expect(bundleId).toContain('com.merath');
+      expect(bundleId).toContain('mobile');
     });
 
     it('should have valid EAS project ID', () => {
@@ -194,15 +194,17 @@ describe('Phase 6: Integration Tests', () => {
     });
 
     it('should have Android package name', () => {
-      const androidPackage = 'space.manus.merath_mobile.t20260101172935';
+      const androidPackage = 'com.merath.mobile';
       expect(androidPackage).toBeDefined();
       expect(androidPackage.length).toBeGreaterThan(0);
+      expect(androidPackage).toMatch(/^com\.merath\./);
     });
 
     it('should have iOS bundle identifier', () => {
-      const bundleIdentifier = 'space.manus.merath_mobile.t20260101172935';
+      const bundleIdentifier = 'com.merath.mobile';
       expect(bundleIdentifier).toBeDefined();
       expect(bundleIdentifier.length).toBeGreaterThan(0);
+      expect(bundleIdentifier).toMatch(/^com\.merath\./);
     });
 
     it('should have adaptive icon configuration', () => {
