@@ -21,17 +21,20 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   console.warn('Failed to prevent auto-hiding splash screen');
 });
 
+// Define a safety timeout to hide splash if stuck
+const SPLASH_HIDE_TIMEOUT = 15000; // 15 seconds max
+
 /**
  * Error Boundary Component
  * Catches and handles errors in the application
  */
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
+  { hasError: boolean; error: Error | null; errorInfo: React.ErrorInfo | null }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error: Error) {
@@ -39,8 +42,13 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('App Error:', error);
+    console.error('=== App Error ===');
+    console.error('Error:', error);
     console.error('Error Info:', errorInfo);
+    console.error('Component Stack:', errorInfo.componentStack);
+    
+    // Update state to include error info for debugging
+    this.setState({ errorInfo });
   }
 
   render() {
@@ -55,6 +63,11 @@ class ErrorBoundary extends React.Component<
           <Text style={styles.errorDetail}>
             {this.state.error?.message || 'Unknown error'}
           </Text>
+          {__DEV__ && this.state.errorInfo && (
+            <Text style={styles.errorDetail}>
+              {this.state.errorInfo.componentStack}
+            </Text>
+          )}
           <Text style={styles.errorRestart}>
             Please restart the application.
           </Text>
@@ -80,21 +93,31 @@ export default function App() {
   const [disclaimersAccepted, setDisclaimersAccepted] = useState(false);
   const [disclaimersLoaded, setDisclaimersLoaded] = useState(false);
   const [appReady, setAppReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user has already accepted disclaimers
     checkDisclaimerAcceptance();
+
+    // Safety timeout: force hide splash screen after max time
+    const splashTimeout = setTimeout(() => {
+      SplashScreen.hideAsync().catch((err) => {
+        console.warn('Safety timeout: Failed to hide splash screen:', err);
+      });
+    }, SPLASH_HIDE_TIMEOUT);
+
+    return () => clearTimeout(splashTimeout);
   }, []);
 
   // Hide splash screen once app is ready
   useEffect(() => {
-    if (disclaimersLoaded) {
+    if (disclaimersLoaded && !initError) {
       SplashScreen.hideAsync().catch((err) => {
         console.warn('Failed to hide splash screen:', err);
       });
       setAppReady(true);
     }
-  }, [disclaimersLoaded]);
+  }, [disclaimersLoaded, initError]);
 
   const checkDisclaimerAcceptance = async () => {
     try {
@@ -104,6 +127,7 @@ export default function App() {
       }
     } catch (error) {
       console.error('Error checking disclaimer acceptance:', error);
+      setInitError(`Storage error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDisclaimersLoaded(true);
     }
@@ -117,15 +141,37 @@ export default function App() {
       
       setDisclaimersAccepted(true);
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('Error saving disclaimer acceptance:', error);
+      setInitError(`Failed to save preferences: ${errorMsg}`);
     }
   };
 
   const handleDisclaimersDecline = () => {
     // User declined - exit app
-    // In a real app, you might show a message or take different action
     console.log('User declined disclaimers');
   };
+
+  // Show error state if initialization failed
+  if (initError && disclaimersLoaded) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#d32f2f', marginBottom: 12, textAlign: 'center' }}>
+              خطأ في التهيئة
+            </Text>
+            <Text style={{ fontSize: 14, color: '#666', marginBottom: 12, textAlign: 'center' }}>
+              {initError}
+            </Text>
+            <Text style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>
+              يرجى إعادة تشغيل التطبيق
+            </Text>
+          </View>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
+  }
 
   if (!disclaimersLoaded) {
     // Show loading state while checking disclaimer acceptance
@@ -141,6 +187,7 @@ export default function App() {
     );
   }
 
+  // Main app render with error boundary
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

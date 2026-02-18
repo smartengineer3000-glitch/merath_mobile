@@ -6,10 +6,11 @@
  * Integrates all screens and navigation flows
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, ActivityIndicator } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { I18nManager, Platform } from 'react-native';
 
@@ -126,8 +127,22 @@ export function TabNavigator() {
  * Main navigation container with stack for handling modals/errors
  */
 export function RootNavigator() {
+  const [isReady, setIsReady] = useState(false);
+  const navigationRef = React.useRef<any>(null);
+
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer 
+      ref={navigationRef}
+      linking={linking}
+      onReady={() => {
+        setIsReady(true);
+      }}
+      fallback={
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#4F46E5" />
+        </View>
+      }
+    >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="MainApp"
