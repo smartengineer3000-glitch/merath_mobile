@@ -21,7 +21,7 @@ const config: ExpoConfig = {
   icon: "./assets/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: false,
+  newArchEnabled: true,
   
   description: 'تطبيق شامل لحساب المواريث الشرعية بدعم المذاهب الفقهية الأربعة',
   platforms: ["android"],
