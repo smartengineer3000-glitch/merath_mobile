@@ -70,3 +70,4 @@ expo-env.d.ts
 project_audit_*.txt
 comprehensive_audit.txt
 run_audit.sh
+check_deps.sh
