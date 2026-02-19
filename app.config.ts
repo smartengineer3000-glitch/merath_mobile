@@ -1,7 +1,6 @@
 import type { ExpoConfig } from "expo/config";
 
 // IMPORTANT: Must match the package name in android/app/build.gradle
-// Current build.gradle shows: space.manus.merath_mobile.t20260101172935
 const bundleId = "space.manus.merath_mobile.t20260101172935";
 const appScheme = "merath";
 
@@ -11,7 +10,7 @@ const env = {
   appSlug: 'merath_mobile',
   logoUrl: '',
   scheme: appScheme,
-  androidPackage: bundleId,  // Only Android now
+  androidPackage: bundleId,
 };
 
 const config: ExpoConfig = {
@@ -22,10 +21,10 @@ const config: ExpoConfig = {
   icon: "./assets/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: false,  // DISABLED for stability
+  newArchEnabled: false,
   
   description: 'تطبيق شامل لحساب المواريث الشرعية بدعم المذاهب الفقهية الأربعة',
-  platforms: ["android"],  // ANDROID ONLY
+  platforms: ["android"],
 
   splash: {
     image: "./assets/splash.png",
@@ -46,18 +45,16 @@ const config: ExpoConfig = {
     }
   },
 
-  // iOS section REMOVED - Android only
-
   android: {
     icon: "./assets/icon.png",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#FFFFFF"
     },
-    edgeToEdgeEnabled: false,  // DISABLED for compatibility
+    edgeToEdgeEnabled: false,
     predictiveBackGestureEnabled: false,
-    package: env.androidPackage,  // Now matches build.gradle
-    permissions: ["INTERNET"],  // MINIMAL permissions
+    package: env.androidPackage,
+    permissions: [],  // NO PERMISSIONS - App works completely offline
     intentFilters: [
       {
         action: "VIEW",
@@ -81,7 +78,7 @@ const config: ExpoConfig = {
   ],
   experiments: {
     typedRoutes: true,
-    reactCompiler: false,  // DISABLED
+    reactCompiler: false,
   },
 };
 
