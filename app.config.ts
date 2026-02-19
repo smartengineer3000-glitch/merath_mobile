@@ -51,7 +51,7 @@ const config: ExpoConfig = {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#FFFFFF"
     },
-    edgeToEdgeEnabled: false,
+    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     permissions: [],  // NO PERMISSIONS - App works completely offline
