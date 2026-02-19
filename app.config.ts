@@ -32,6 +32,12 @@ const config: ExpoConfig = {
     backgroundColor: "#ffffff"
   },
 
+  updates: {
+    enabled: false,
+    fallbackToCacheTimeout: 0,
+    checkAutomatically: "ON_ERROR_RECOVERY"
+  },
+
   extra: {
     eas: {
       projectId: "9fce94bd-7eee-4453-9707-f4bcc74246f6"
@@ -54,7 +60,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: [],  // NO PERMISSIONS - App works completely offline
+    permissions: [],
     intentFilters: [
       {
         action: "VIEW",
