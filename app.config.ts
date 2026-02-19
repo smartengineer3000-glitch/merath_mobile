@@ -1,8 +1,8 @@
 import type { ExpoConfig } from "expo/config";
 
-// Bundle ID format: com.<company>.<app>
-// Standard Android/iOS package naming convention
-const bundleId = "com.merath.mobile";
+// IMPORTANT: Must match the package name in android/app/build.gradle
+// Current build.gradle shows: space.manus.merath_mobile.t20260101172935
+const bundleId = "space.manus.merath_mobile.t20260101172935";
 const appScheme = "merath";
 
 const env = {
@@ -11,8 +11,7 @@ const env = {
   appSlug: 'merath_mobile',
   logoUrl: '',
   scheme: appScheme,
-  iosBundleId: bundleId,
-  androidPackage: bundleId,
+  androidPackage: bundleId,  // Only Android now
 };
 
 const config: ExpoConfig = {
@@ -23,10 +22,10 @@ const config: ExpoConfig = {
   icon: "./assets/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+  newArchEnabled: false,  // DISABLED for stability
   
   description: 'تطبيق شامل لحساب المواريث الشرعية بدعم المذاهب الفقهية الأربعة',
-  platforms: ["ios", "android"],
+  platforms: ["android"],  // ANDROID ONLY
 
   splash: {
     image: "./assets/splash.png",
@@ -34,12 +33,10 @@ const config: ExpoConfig = {
     backgroundColor: "#ffffff"
   },
 
-  // <<< Phase 6: Enhanced EAS Configuration >>>
   extra: {
     eas: {
       projectId: "9fce94bd-7eee-4453-9707-f4bcc74246f6"
     },
-    // App metadata for deep linking and sharing
     appMetadata: {
       version: "1.0.0",
       buildNumber: 1,
@@ -49,20 +46,18 @@ const config: ExpoConfig = {
     }
   },
 
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: env.iosBundleId,
-  },
+  // iOS section REMOVED - Android only
+
   android: {
     icon: "./assets/icon.png",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#FFFFFF"
     },
-    edgeToEdgeEnabled: true,
+    edgeToEdgeEnabled: false,  // DISABLED for compatibility
     predictiveBackGestureEnabled: false,
-    package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS", "INTERNET", "WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE"],
+    package: env.androidPackage,  // Now matches build.gradle
+    permissions: ["INTERNET"],  // MINIMAL permissions
     intentFilters: [
       {
         action: "VIEW",
@@ -71,15 +66,6 @@ const config: ExpoConfig = {
           {
             scheme: env.scheme,
             host: "*",
-          },
-          {
-            scheme: "merath",
-            host: "*",
-          },
-          {
-            scheme: "https",
-            host: "merath.app",
-            pathPrefix: "/*",
           },
         ],
         category: ["BROWSABLE", "DEFAULT"],
@@ -95,7 +81,7 @@ const config: ExpoConfig = {
   ],
   experiments: {
     typedRoutes: true,
-    reactCompiler: true,
+    reactCompiler: false,  // DISABLED
   },
 };
 
