@@ -1,11 +1,9 @@
 import type { ExpoConfig } from "expo/config";
 
-// IMPORTANT: Must match the package name in android/app/build.gradle
 const bundleId = "space.manus.merath_mobile.t20260101172935";
 const appScheme = "merath";
 
 const env = {
-  // App branding
   appName: 'حاسبة المواريث الشرعية (تطبيق جوال)',
   appSlug: 'merath_mobile',
   logoUrl: '',
@@ -61,6 +59,11 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     permissions: [],
+    blockedPermissions: [
+      "WRITE_EXTERNAL_STORAGE",
+      "READ_EXTERNAL_STORAGE",
+      "RECORD_AUDIO"
+    ],
     intentFilters: [
       {
         action: "VIEW",
