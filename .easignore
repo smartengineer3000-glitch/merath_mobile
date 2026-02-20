@@ -66,9 +66,20 @@ support-files/
 docs/
 
 # Package lock files (use package.json instead)
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 /android
 /android
 /ios
+
+# Audit and temporary files
+*.sh
+*.txt
+audit_*
+project_audit_*
+check_deps.sh
+verify_assets.sh
+version_checker.sh
+run_audit.sh
+comprehensive_audit.txt
+project_tree.txt
